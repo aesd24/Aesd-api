@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('serviteurs_de_dieu', function (Blueprint $table) {
             $table->id();
-            $table->boolean('is_main')->default(false);
+            $table->boolean('is_main')->nullable();
             $table->boolean('is_assigned')->default(false);
             $table->string('id_card_recto')->nullable()->unique();
             $table->string('id_card_verso')->nullable()->unique();
