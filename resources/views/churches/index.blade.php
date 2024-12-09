@@ -20,10 +20,9 @@
 
                     <a href="{{ route('churches.create') }}" class="">Ajouter une Église</a>
 
-
                     @if ($churches->isNotEmpty())
                         <div class="mb-6">
-                            <h3 class="text-xl font-semibold text-gray-700 mb-3">Églises Créées par le Serviteur</h3>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-3">Listes des Églises</h3>
                             <table class="min-w-full table-auto bg-white shadow rounded-lg">
                                 <thead class="bg-gray-200">
                                     <tr>
@@ -63,10 +62,10 @@
                         </div>
                     @endif
 
-                    @if ($churchesSecondaires)
+                    {{-- @if ($churchesSecondaires->isNotEmpty())
                         <div class="mb-6">
-                            <h3 class="text-xl font-semibold text-gray-700 mb-3">Église assigner par le Serviteur Principal
-                            </h3>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-3">Église Principale
+                                Principal</h3>
                             <table class="min-w-full table-auto bg-white shadow rounded-lg">
                                 <thead class="bg-gray-200">
                                     <tr>
@@ -79,32 +78,33 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="px-4 py-2">{{ $churchesSecondaires->name }}</td>
-                                        <td class="px-4 py-2">{{ $churchesSecondaires->email }}</td>
-                                        <td class="px-4 py-2">{{ $churchesSecondaires->phone }}</td>
-                                        <td class="px-4 py-2">{{ $churchesSecondaires->adresse }}</td>
-                                        <td class="px-4 py-2"><img
-                                                src="{{ asset('storage/logos/' . basename($churchesSecondaires->logo)) }}"
-                                                alt="Image" class="w-10 h-10 rounded-full object-cover"></td>
-                                        <td class="px-4 py-2 flex space-x-2">
-                                            <a href="{{ route('churches.edit', $churchesSecondaires) }}"
-                                                class="">Éditer</a>
-                                            <form action="{{ route('churches.destroy', $churchesSecondaires) }}"
-                                                method="POST" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="btn btn-danger text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md">Supprimer</button>
-                                            </form>
-                                        </td>
-                                    </tr>
+                                    @foreach ($churchesSecondaires as $church)
+                                        <tr class="border-b hover:bg-gray-50">
+                                            <td class="px-4 py-2">{{ $church->name }}</td>
+                                            <td class="px-4 py-2">{{ $church->email }}</td>
+                                            <td class="px-4 py-2">{{ $church->phone }}</td>
+                                            <td class="px-4 py-2">{{ $church->adresse }}</td>
+                                            <td class="px-4 py-2"><img
+                                                    src="{{ asset('storage/logos/' . basename($church->logo)) }}"
+                                                    alt="Image" class="w-10 h-10 rounded-full object-cover"></td>
+                                            <td class="px-4 py-2 flex space-x-2">
+                                                <a href="{{ route('churches.edit', $church) }}"
+                                                    class="">Éditer</a>
+                                                <form action="{{ route('churches.destroy', $church) }}" method="POST"
+                                                    class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="btn btn-danger text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md">Supprimer</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
-                        {{-- @else
-                        <p class="text-gray-600">Aucune église secondaire associée.</p> --}}
-                    @endif
+                    @endif --}}
+
                 </div>
 
             </div>

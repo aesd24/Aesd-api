@@ -14,8 +14,20 @@ return new class extends Migration
         Schema::create('serviteurs_de_dieu_sujets_de_discussion', function (Blueprint $table) {
             $table->id();
             $table->string('Comment');
-            $table->foreignId('serviteur_de_dieu_id')->constrained('serviteurs_de_dieu')->onDelete('cascade');
-            $table->foreignId('sujet_id')->constrained('sujets_de_discussion')->onDelete('cascade');
+
+            // Ajout des clés étrangères avec des noms explicites
+            $table->unsignedBigInteger('serviteur_de_dieu_id');
+            $table->unsignedBigInteger('sujet_id');
+            
+            $table->foreign('serviteur_de_dieu_id', 'fk_serviteur_id')
+                ->references('id')
+                ->on('serviteurs_de_dieu')
+                ->onDelete('cascade');
+            
+            $table->foreign('sujet_id', 'fk_sujet_id')
+                ->references('id')
+                ->on('sujets_de_discussion')
+                ->onDelete('cascade');
 
             $table->timestamps();
         });

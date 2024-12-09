@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChurchApiController;
+use App\Http\Controllers\Api\SujetDeDiscussionApiController;
 // use App\Http\Controllers\Api\VerificationController;
 // use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
@@ -42,17 +43,43 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route de vérification d'email (décommenter si nécessaire)
     // Route::post('email/verify', [VerificationController::class, 'verify'])->middleware('throttle:6,1');
 
+
+
     // Ressources des églises
     Route::apiResource('churches', ChurchApiController::class);
 
-    // recupérer les serviteurs dont is_man false et qui sont de l'église du serviteur principal en se basant sur l'id de l'église
-    Route::middleware('auth:sanctum')->get('/serviteur_sécondaire/{church}', [ChurchApiController::class, 'serviteur_sécondaire']);
-
+    //Enregistrez l'église sélectionnée
+    Route::middleware('auth:sanctum')->post('/sauvegarder-eglise-selectionnee', [ChurchApiController::class, 'sauvegarderEgliseSelectionnee']);
     //selecte contenant la liste des eglise
     Route::middleware('auth:sanctum')->get('/choisir-eglise', [ChurchApiController::class, 'choisirEglise']);
+    //Route contenant les informations de l'église, de ses serviteurs et du serviteur qui lui est assigné en fonction de l'ID de l'église
+    Route::middleware('auth:sanctum')->get('/church/{church}', [ChurchApiController::class, 'edit']);
 
     Route::middleware('auth:sanctum')->post('/sauvegarder-eglise', [ChurchApiController::class, 'sauvegarderEgliseSelectionnee']);
 
+
+
+
+
+
     // Déclaration de la ressource cérémonies
     Route::apiResource('ceremonies', CeremonieApiController::class);
+
+    //Récupère les églises associées au ServiteurDeDieu connecté pour créer une cérémonie.
+    Route::middleware('auth:sanctum')->get('/ceremonies/churches', [CeremonieApiController::class, 'getChurchesForCeremony']);
+
+    //Récupérer les détails d'une cérémonie pour modification.
+    Route::middleware('auth:sanctum')->get('/ceremonies/{id}', [CeremonieApiController::class, 'edit']);
+
+
+    // Déclaration de la ressource sujet de discution
+    Route::apiResource('sujets-de-discussion', SujetDeDiscussionApiController::class);
+
+
+    // repondre à une discution
+    Route::post('sujets_response/{sujet}', [SujetDeDiscussionApiController::class, 'addComment']);
+
+
+    // Afficher un sujet de discussion spécifique
+    Route::get('sujets_spécifique/{sujet}', [SujetDeDiscussionApiController::class, 'user_show_discussion']);
 });

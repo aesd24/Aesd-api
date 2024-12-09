@@ -15,6 +15,7 @@ class ServiteurDeDieu extends Model
 
     protected $fillable = [
         'is_main',
+        'is_assigned',
         'id_card_recto',
         'id_card_verso',
         'user_id',
@@ -53,5 +54,13 @@ class ServiteurDeDieu extends Model
     public function addCommentToSujet(SujetDeDiscussion $sujet, string $comment)
     {
         $this->sujetsDeDiscussion()->attach($sujet->id, ['Comment' => $comment]);
+    }
+
+
+
+
+    public function churches()
+    {
+        return $this->hasMany(Church::class, 'owner_servant_id');
     }
 }

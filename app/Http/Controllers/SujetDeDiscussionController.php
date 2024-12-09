@@ -75,12 +75,6 @@ class SujetDeDiscussionController extends Controller
             return back()->with('error', 'Vous n\'êtes ni un Fidele ni un Chantre.');
         }
 
-        // Récupérer tous les sujets de discussion dont la date est passée ou actuelle
-        // $sujets = SujetDeDiscussion::where('date', '<=', now())->get();
-
-
-        // Récupérer tous les sujets de discussion
-        //$sujets = SujetDeDiscussion::all();
 
 
         // Récupérer tous les sujets de discussion dont la date est aujourd'hui
@@ -311,15 +305,6 @@ class SujetDeDiscussionController extends Controller
     // Afficher un sujet de discussion spécifique
     public function user_show_discussion(SujetDeDiscussion $sujet)
     {
-        // // Récupérer l'utilisateur connecté
-        // $user = auth()->user();
-
-        // // Vérification si l'utilisateur est un Fidele
-        // $fidele = Fidele::where('user_id', $user->id)->first();
-
-        // // Vérification si l'utilisateur est un Chantre
-        // $chantre = Chantre::where('user_id', $user->id)->first();
-
 
         $fidele =  auth()->user()->fidele;
         $chantre = auth()->user()->chantre;
@@ -341,11 +326,16 @@ class SujetDeDiscussionController extends Controller
         return view('sujets.show', compact('sujet')); // Retourner la vue pour afficher le sujet
     }
 
+
+
     // Afficher le formulaire d'édition d'un sujet de discussion
     public function edit(SujetDeDiscussion $sujet)
     {
         return view('sujets.edit', compact('sujet')); // Retourner la vue d'édition
     }
+
+
+
 
     // Mettre à jour un sujet de discussion
     public function update(Request $request, SujetDeDiscussion $sujet)
@@ -370,4 +360,6 @@ class SujetDeDiscussionController extends Controller
 
         return redirect()->route('sujets.index')->with('success', 'Sujet de discussion supprimé avec succès.');
     }
+
+    
 }

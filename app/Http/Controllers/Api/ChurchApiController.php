@@ -16,17 +16,6 @@ use Illuminate\Support\Facades\Auth;
 
 class ChurchApiController extends Controller
 {
-    /**
-     * Afficher la liste des églises.
-     */
-    // public function index(): JsonResponse
-    // {
-    //     $churches = Church::with(['serviteursDeDieu', 'fideles', 'chantres'])->get();
-    //     return $this->successResponse($churches);
-    // }
-
-
-
 
     public function index()
     {
@@ -69,31 +58,6 @@ class ChurchApiController extends Controller
         return $this->successResponse($church);
     }
 
-    /**
-     * Enregistrer une nouvelle église.
-     */
-    // public function store(StoreChurchRequest $request): JsonResponse
-    // {
-    //     // Gestion du téléchargement du logo
-    //     $logoPath = $this->handleLogoUpload($request);
-
-    //     // Vérification que l'utilisateur est un serviteur de Dieu
-    //     $serviteurDeDieu = $this->getAuthenticatedServiteurDeDieu();
-
-    //     if (!$serviteurDeDieu) {
-    //         return $this->errorResponse('L\'utilisateur connecté n\'est pas un serviteur de Dieu.', 403);
-    //     }
-
-    //     // Enregistrement avec l'ID du serviteur de Dieu
-    //     $church = Church::create(array_merge($request->validated(), [
-    //         'logo' => $logoPath,
-    //         'owner_servant_id' => $serviteurDeDieu->id,
-    //     ]));
-
-    //     return $this->successResponse($church, 'Église créée avec succès.', 201);
-    // }
-
-
 
 
     public function store(Request $request)
@@ -108,173 +72,155 @@ class ChurchApiController extends Controller
             'is_main' => 'required|boolean',
             'description' => 'nullable|string',
             'type_church' => 'nullable|string',
-        ],  [
+            'attestation_file_path' => 'nullable|file|mimes:pdf|max:2048|required_if:is_main,true', // Requis si is_main est vrai
+        ], [
             // Messages personnalisés
             'name.required' => 'Le champ nom est obligatoire.',
             'name.string' => 'Le champ nom doit être une chaîne de caractères.',
             'name.max' => 'Le champ nom ne doit pas dépasser :max caractères.',
-
             'email.email' => 'L\'adresse email doit être valide.',
-            'email.max' => 'L\'adresse email ne doit pas dépasser :max caractères.',
-
             'phone.string' => 'Le numéro de téléphone doit être une chaîne de caractères.',
-            'phone.max' => 'Le numéro de téléphone ne doit pas dépasser :max caractères.',
-
-            'adresse.string' => 'L\'adresse doit être une chaîne de caractères.',
-
             'logo.image' => 'Le logo doit être une image.',
-            'logo.mimes' => 'Le logo doit être de type :values.', // Gère les types de fichiers autorisés
+            'logo.mimes' => 'Le logo doit être de type :values.',
             'logo.max' => 'Le logo ne doit pas dépasser :max Ko.',
-
             'is_main.required' => 'Le champ "principal" est requis.',
-            'is_main.boolean' => 'Le champ "principal" doit être vrai ou faux.',
-
             'description.string' => 'La description doit être une chaîne de caractères.',
-
             'type_church.string' => 'Le type d\'église doit être une chaîne de caractères.',
-
-            // 'categorie.string' => 'La catégorie doit être une chaîne de caractères.',
+            'attestation_file_path.file' => 'Le fichier d\'attestation doit être un fichier valide.',
+            'attestation_file_path.mimes' => 'L\'attestation doit être un fichier PDF.',
+            'attestation_file_path.max' => 'L\'attestation ne doit pas dépasser :max Ko.',
+            'attestation_file_path.required_if' => 'L\'attestation est requise lorsque l\'église est principale.',
         ]);
 
-        // Vérifier si le logo est fourni
-        $logoPath = null;
-        if ($request->hasFile('logo')) {
-            $idCardRectoFile = $request->file('logo');
-            $rectoFilename = $validatedData['name'] . '_' . time() . '.' . $idCardRectoFile->getClientOriginalExtension();
-            $logoPath = $idCardRectoFile->storeAs('public/logos', $rectoFilename);
-        }
+        try {
+            // Vérifier si l'église principale existe déjà pour l'utilisateur connecté
+            if ($validatedData['is_main']) {
+                $churchIdOwnedByUser = Church::where('owner_servant_id', auth()->id())->value('id');
+                if ($churchIdOwnedByUser) {
+                    return response()->json(['error' => 'Vous avez déjà une église principale.'], 400);
+                }
+            }
 
-        // Récupérer le ServiteurDeDieu associé à l'utilisateur connecté
-        $serviteurDeDieu = ServiteurDeDieu::where('user_id', auth()->id())->first();
+            // Gestion du fichier logo
+            $logoPath = null;
+            if ($request->hasFile('logo')) {
+                $logoFile = $request->file('logo');
+                $logoFilename = $validatedData['name'] . '_' . time() . '.' . $logoFile->getClientOriginalExtension();
+                $logoPath = $logoFile->storeAs('public/logos', $logoFilename);
+            }
 
-        if (!$serviteurDeDieu) {
+            // Gestion du fichier d'attestation
+            $attestationPath = null;
+            if ($validatedData['is_main'] && $request->hasFile('attestation_file_path')) {
+                $attestationFile = $request->file('attestation_file_path');
+                $attestationFilename = $validatedData['name'] . '_attestation_' . time() . '.' . $attestationFile->getClientOriginalExtension();
+                $attestationPath = $attestationFile->storeAs('public/attestations', $attestationFilename);
+            }
+
+            // Récupérer le serviteur de Dieu connecté
+            $serviteurDeDieu = ServiteurDeDieu::where('user_id', auth()->id())->first();
+            if (!$serviteurDeDieu) {
+                return response()->json(['error' => 'Aucun serviteur trouvé pour l\'utilisateur connecté.'], 404);
+            }
+
+            // Créer l'église
+            $newChurch = Church::create([
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'] ?? null,
+                'phone' => $validatedData['phone'] ?? null,
+                'adresse' => $validatedData['adresse'] ?? null,
+                'logo' => $logoPath ?? null,
+                'is_main' => $validatedData['is_main'],
+                'description' => $validatedData['description'] ?? null,
+                'owner_servant_id' => $serviteurDeDieu->id,
+                'type_church' => $validatedData['type_church'] ?? null,
+                'attestation_file_path' => $attestationPath ?? null,
+            ]);
+
+            // Si l'église est principale, mettre à jour les informations du serviteur
+            if ($validatedData['is_main']) {
+                $newChurch->update([
+                    'main_church_id' => $newChurch->id,
+                ]);
+
+                $serviteurDeDieu->update([
+                    'church_id' => $newChurch->id,
+                    'is_assigned' => 1,
+                    'is_main' => 1,
+                ]);
+            }
+
             return response()->json([
-                'message' => 'L\'utilisateur connecté n\'est pas un serviteur de Dieu.'
-            ], 403); // 403 Forbidden
+                'success' => true,
+                'message' => 'Église créée avec succès.',
+                'church' => $newChurch
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erreur lors de la création de l\'église.',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Créer une nouvelle église
-        $church = Church::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'] ?? null,
-            'phone' => $validatedData['phone'] ?? null,
-            'adresse' => $validatedData['adresse'] ?? null,
-            'logo' => $logoPath, // Si le logo est téléchargé, son chemin est enregistré
-            'is_main' => $validatedData['is_main'],
-            'description' => $validatedData['description'] ?? null,
-            'owner_servant_id' => $serviteurDeDieu->id, // Utilisez l'ID du serviteur de Dieu
-            'type_church' => $validatedData['type_church'] ?? null,
-        ]);
-
-        // Retourner une réponse JSON avec succès
-        return response()->json([
-            'message' => 'Église créée avec succès.',
-            'data' => $church
-        ], 201); // 201 Created
     }
 
 
 
 
 
-
-    public function serviteur_sécondaire(Church $church)
-    {
-        // Récupérer les utilisateurs associés à un ServiteurDeDieu avec 'is_main' à false
-        $users = User::whereHas('serviteurDeDieu', function ($query) {
-            $query->where('is_main', false);
-        })->get();
-
-        // Récupérer les `church_id` associés aux utilisateurs
-        $serviteursDeDieuChurchIds = $users->map(function ($user) {
-            $serviteurDeDieu = ServiteurDeDieu::where('user_id', $user->id)->first();
-            return $serviteurDeDieu ? $serviteurDeDieu->church_id : null;
-        })->filter()->toArray(); // Filtrer les valeurs nulles et convertir en tableau
-
-        // Récupérer l'ID de l'église associée au propriétaire connecté
-        $churchIdOwnedByUser = Church::where('owner_servant_id', auth()->id())->value('id');
-
-        // Vérifier si une église spécifique existe pour cet utilisateur
-        $exists = Church::where('owner_servant_id', $churchIdOwnedByUser)
-            ->whereIn('id', $serviteursDeDieuChurchIds)
-            ->exists();
-
-        // Récupérer le `ServiteurDeDieu` associé à l'église
-        $serviteur = ServiteurDeDieu::where('church_id', $church->id)
-            ->with('user') // Charger la relation utilisateur
-            ->first();
-
-        // Si l'église n'est pas accessible à cet utilisateur, retourner une erreur
-        if (!$exists) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Vous n\'êtes pas autorisé à modifier cette église.',
-                'church' => $church,
-                'serviteur' => $serviteur,
-            ], 403);
-        }
-
-        // Retourner les détails de l'église, des utilisateurs, et du serviteur
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Détails de l\'église récupérés avec succès.',
-            'church' => $church,
-            'users' => $users,
-            'serviteur' => $serviteur,
-        ]);
-    }
+   
 
 
 
-
+    /**
+     * Permet à un utilisateur de choisir une église en fonction de son rôle (Fidèle, Chantre, Serviteur de Dieu).
+     */
     public function choisirEglise()
     {
-        $eglises = Church::all(); // Récupère toutes les églises
         $user = Auth::user(); // Récupère l'utilisateur actuellement connecté
 
-        // Vérification si l'utilisateur est un Fidèle ou un Chantre
+        // Récupère toutes les églises
+        $eglises = Church::all();
+
+        // Vérification des rôles de l'utilisateur : Fidèle, Chantre ou Serviteur de Dieu
         $fidele = Fidele::where('user_id', $user->id)->first();
         $chantre = Chantre::where('user_id', $user->id)->first();
-        $serviteurDeDieu = ServiteurDeDieu::where('user_id', $user->id)->first();
+        $serviteur_de_dieu = ServiteurDeDieu::where('user_id', $user->id)->first();
 
-        // Initialisation de l'église associée à l'utilisateur
-        $selectedChurchId = null;
+        $selectedChurchId = null; // Initialisation de l'église sélectionnée
 
         if ($fidele) {
-            $selectedChurchId = $fidele->church_id; // L'utilisateur est un Fidèle
+            // Si l'utilisateur est un Fidèle, récupérer l'église associée
+            $selectedChurchId = $fidele->church_id;
         } elseif ($chantre) {
-            $selectedChurchId = $chantre->church_id; // L'utilisateur est un Chantre
-        } elseif ($serviteurDeDieu) {
-            if (!$serviteurDeDieu->is_main) { // Vérifie que "is_main" est false
-                $selectedChurchId = $serviteurDeDieu->church_id;
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Votre statut actuel ne vous permet pas de choisir une église.'
-                ], 403); // Statut HTTP 403 Forbidden
+            // Si l'utilisateur est un Chantre, récupérer l'église associée
+            $selectedChurchId = $chantre->church_id;
+        } elseif ($serviteur_de_dieu) {
+            // Si l'utilisateur est un Serviteur de Dieu
+            if ($serviteur_de_dieu->is_main) {
+                return response()->json(['error' => 'Votre statut actuel ne vous permet pas de choisir une église.'], 403);
             }
+            // Si ce n'est pas un Serviteur Principal, récupérer l'église associée
+            $selectedChurchId = $serviteur_de_dieu->church_id;
         } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Vous devez être un Fidèle ,  un Chantre , serviteur pour choisir une église.'
-            ], 403); // Statut HTTP 403 Forbidden
+            // Si l'utilisateur n'a pas de rôle valide, renvoyer une erreur
+            return response()->json(['error' => 'Vous devez être un Fidèle, un Chantre ou un Serviteur de Dieu pour choisir une église.'], 403);
         }
 
-        // Retourner les données des églises et de l'église sélectionnée
         return response()->json([
-            'success' => true,
-            'data' => [
-                'eglises' => $eglises,
-                'selected_church_id' => $selectedChurchId
-            ]
-        ], 200); // Statut HTTP 200 OK
+            'eglises' => $eglises,
+            'selected_church_id' => $selectedChurchId,
+        ]);
     }
 
 
+   /**
+     * Sauvegarde l'église sélectionnée par l'utilisateur.
+     */
     public function sauvegarderEgliseSelectionnee(Request $request)
     {
+        // Validation des données reçues
         $request->validate([
-            'church_id' => ['required', 'exists:churches,id'], // Valide que l'ID existe dans la table
+            'church_id' => ['required', 'exists:churches,id'], // Valide que l'ID existe dans la table des églises
         ], [
             'church_id.required' => 'Veuillez sélectionner une église.',
             'church_id.exists' => 'L\'église sélectionnée est invalide.',
@@ -289,33 +235,35 @@ class ChurchApiController extends Controller
         // Vérification si l'utilisateur est un Chantre
         $chantre = Chantre::where('user_id', $user->id)->first();
 
-        // Vérification si l'utilisateur est un Serviteur de Dieu
-        $serviteurDeDieu = ServiteurDeDieu::where('user_id', $user->id)->first();
+        // Vérification si l'utilisateur est un serviteur de Dieu
+        $serviteur_de_dieu = ServiteurDeDieu::where('user_id', $user->id)->first();
 
         // Si l'utilisateur n'est ni un Fidele, ni un Chantre, ni un Serviteur de Dieu
-        if (!$fidele && !$chantre && !$serviteurDeDieu) {
-            return response()->json(['error' => 'Vous devez être un Fidèle, un Chantre ou un Serviteur de Dieu pour sélectionner une église.'], 403);
+        if (!$fidele && !$chantre && !$serviteur_de_dieu) {
+            return response()->json(['error' => 'Vous n\'êtes ni un Fidèle, ni un Chantre, ni un Serviteur de Dieu.'], 403);
         }
 
-        // Met à jour l'église pour un Fidèle
+        // Mise à jour de l'église pour un Fidele
         if ($fidele) {
-            $fidele->church_id = $churchId;
-            $fidele->save();
+            $fidele->update([
+                'church_id' => $churchId,
+            ]);
         }
 
-        // Met à jour l'église pour un Chantre
+        // Mise à jour de l'église pour un Chantre
         if ($chantre) {
-            $chantre->church_id = $churchId;
-            $chantre->save();
+            $chantre->update([
+                'church_id' => $churchId,
+            ]);
         }
 
-        // Met à jour l'église pour un Serviteur de Dieu
-        if ($serviteurDeDieu) {
-            $serviteurDeDieu->church_id = $churchId;
-            $serviteurDeDieu->save();
+        // Mise à jour de l'église pour un Serviteur de Dieu
+        if ($serviteur_de_dieu) {
+            $serviteur_de_dieu->update([
+                'church_id' => $churchId,
+            ]);
         }
 
-        // Réponse de succès
         return response()->json(['success' => 'Église sélectionnée avec succès !']);
     }
 
@@ -328,38 +276,80 @@ class ChurchApiController extends Controller
 
 
 
-
-
-
-    /**
-     * Mettre à jour les informations d'une église.
-     */
-    // public function update(StoreChurchRequest $request, Church $church): JsonResponse
-    // {
-    //     // Gestion du téléchargement du logo
-    //     $logoPath = $this->handleLogoUpload($request, $church);
-
-    //     // Vérification que l'utilisateur connecté est un serviteur de Dieu
-    //     $serviteurDeDieu = $this->getAuthenticatedServiteurDeDieu();
-
-    //     if (!$serviteurDeDieu) {
-    //         return $this->errorResponse('L\'utilisateur connecté n\'est pas un serviteur de Dieu.', 403);
-    //     }
-
-    //     // Mise à jour des informations de l'église
-    //     $church->update(array_merge($request->validated(), [
-    //         'logo' => $logoPath,
-    //         'owner_servant_id' => $serviteurDeDieu->id,
-    //     ]));
-
-    //     return $this->successResponse($church, 'Église mise à jour avec succès.');
-    // }
-
-
-
-
-    public function update(Request $request, Church $church)
+    public function edit($churchId)
     {
+        // Récupérer l'église avec l'ID passé en paramètre
+        $church = Church::find($churchId);
+
+        if (!$church) {
+            return response()->json(['error' => 'Église non trouvée.'], 404);
+        }
+
+        // Vérifier si l'utilisateur connecté est bien le propriétaire de l'église
+        if ($church->owner_servant_id !== auth()->id()) {
+            return response()->json(['error' => 'Vous n\'êtes pas autorisé à modifier cette église.'], 403);
+        }
+
+        // Serviteur assigné à l'église
+        $serviteur = ServiteurDeDieu::where('church_id', $church->id)
+            ->where('is_assigned', true)
+            ->first();
+
+        // Récupérer les utilisateurs disponibles pour être assignés à l'église (exclure ceux déjà assignés)
+        $users = User::whereHas('serviteurDeDieu', function ($query) {
+            $query->where('is_main', false)
+                ->where('is_assigned', false);
+        })->get();
+
+        // Récupérer les églises associées aux serviteurs de Dieu des utilisateurs
+        $serviteursDeDieuChurchIds = [];
+        foreach ($users as $user) {
+            $serviteurDeDieu = ServiteurDeDieu::where('user_id', $user->id)->first();
+            if ($serviteurDeDieu) {
+                $serviteursDeDieuChurchIds[] = $serviteurDeDieu->church_id;
+            }
+        }
+
+        // Vérifier si l'utilisateur possède l'église associée aux serviteurs de Dieu
+        $userChurch = Church::where('owner_servant_id', auth()->id())
+            ->whereIn('id', $serviteursDeDieuChurchIds)
+            ->first();
+
+        if ($userChurch) {
+            // Récupérer les utilisateurs qui ne sont pas encore assignés à cette église
+            $availableUsers = User::whereHas('serviteurDeDieu', function ($query) use ($church) {
+                $query->where('church_id', $church->id)
+                    ->where('is_assigned', false)
+                    ->where('is_main', false);
+            })->get();
+
+            return response()->json([
+                'church' => $church,
+                'serviteur' => $serviteur,
+                'users' => $availableUsers,
+            ]);
+        }
+
+        return response()->json([
+            'church' => $church,
+            'serviteur' => $serviteur,
+        ]);
+    }
+
+
+
+
+
+
+    public function update(Request $request, $churchId)
+    {
+        // Récupérer l'église par son ID
+        $church = Church::find($churchId);
+
+        if (!$church) {
+            return response()->json(['error' => 'Église non trouvée'], 404);
+        }
+
         // Validation des données d'entrée
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
@@ -375,129 +365,124 @@ class ChurchApiController extends Controller
             'name.required' => 'Le champ nom est obligatoire.',
             'name.string' => 'Le champ nom doit être une chaîne de caractères.',
             'name.max' => 'Le champ nom ne doit pas dépasser :max caractères.',
-
             'email.email' => 'L\'adresse email doit être valide.',
             'email.max' => 'L\'adresse email ne doit pas dépasser :max caractères.',
-
             'phone.string' => 'Le numéro de téléphone doit être une chaîne de caractères.',
             'phone.max' => 'Le numéro de téléphone ne doit pas dépasser :max caractères.',
-
             'adresse.string' => 'L\'adresse doit être une chaîne de caractères.',
-
             'logo.image' => 'Le logo doit être une image.',
-            'logo.mimes' => 'Le logo doit être de type :values.', // Gère les types de fichiers autorisés
+            'logo.mimes' => 'Le logo doit être de type :values.',
             'logo.max' => 'Le logo ne doit pas dépasser :max Ko.',
-
             'is_main.required' => 'Le champ "principal" est requis.',
             'is_main.boolean' => 'Le champ "principal" doit être vrai ou faux.',
-
             'description.string' => 'La description doit être une chaîne de caractères.',
-
             'type_church.string' => 'Le type d\'église doit être une chaîne de caractères.',
-
-            // 'categorie.string' => 'La catégorie doit être une chaîne de caractères.',
         ]);
+
         // Gestion du téléchargement du logo
         if ($request->hasFile('logo')) {
-            // Supprimez l'ancien logo s'il existe
+            // Supprimer l'ancien logo s'il existe
             if ($church->logo) {
                 Storage::disk('public')->delete($church->logo);
             }
 
             // Génération du nom du nouveau logo
-            $idCardRectoFile = $request->file('logo');
-            $rectoFilename = $validatedData['name'] . '_' . time() . '.' . $idCardRectoFile->getClientOriginalExtension();
-            $logoPath = $idCardRectoFile->storeAs('public/logos', $rectoFilename);
-            $validatedData['logo'] = $logoPath; // Met à jour le chemin du logo dans les données validées
+            $logoFile = $request->file('logo');
+            $logoFilename = $validatedData['name'] . '_' . time() . '.' . $logoFile->getClientOriginalExtension();
+            $logoPath = $logoFile->storeAs('public/logos', $logoFilename);
+            $validatedData['logo'] = $logoPath;
         }
 
-        // Vérification que l'utilisateur connecté est un serviteur de Dieu
+        // Vérifier que l'utilisateur connecté est un serviteur de Dieu
         $serviteurDeDieu = ServiteurDeDieu::where('user_id', auth()->id())->first();
 
         if (!$serviteurDeDieu) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'L\'utilisateur connecté n\'est pas un serviteur de Dieu.',
-            ], 403);
+            return response()->json(['error' => 'L\'utilisateur connecté n\'est pas un serviteur de Dieu.'], 403);
         }
 
         // Mise à jour des informations de l'église
         $church->update(array_merge($validatedData, [
-            'owner_servant_id' => $serviteurDeDieu->id, // Utilise l'ID du serviteur de Dieu
+            'owner_servant_id' => $serviteurDeDieu->id,
         ]));
 
-        // Si un changement de serviteur est demandé  bolean 1 ou 0 true or false faire la mise à jour avec put
+        // Si un changement de serviteur est demandé
         if ($request->change_serviteur) {
-            // Récupérer le serviteur actuellement assigné à l'église
-            $serviteur = ServiteurDeDieu::where('church_id', $church->id)->first();
 
-            // Désassocier l'ancien serviteur, s'il existe
+            // Récupérer le serviteur actuellement assigné
+            $serviteur = ServiteurDeDieu::where('church_id', $church->id)
+                ->where('is_assigned', true)
+                ->first();
+
+            // Désassigner le serviteur actuel si il existe
             if ($serviteur) {
-                $serviteur->church_id = null;
+                $serviteur->is_assigned = 0;
                 $serviteur->save();
             }
 
-            // Associer le nouveau serviteur
+            // Récupérer et assigner le nouveau serviteur
             $newServiteurDeDieu = ServiteurDeDieu::where('user_id', $request->user_id)->first();
 
             if ($newServiteurDeDieu) {
-                $newServiteurDeDieu->church_id = $church->id;
+                $newServiteurDeDieu->is_assigned = 1;
                 $newServiteurDeDieu->save();
             } else {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Le serviteur spécifié n\'existe pas.',
-                ], 404);
+                return response()->json(['error' => 'Le serviteur spécifié n\'existe pas.'], 404);
             }
         }
 
-        // Retourner une réponse JSON de succès
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Église mise à jour avec succès.',
-            'church' => $church,
-        ], 200);
+        // Retourner la réponse avec succès
+        return response()->json(['success' => 'Église mise à jour avec succès.'], 200);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Supprimer une église.
      */
-    public function destroy(Church $church): JsonResponse
+    public function destroy($churchId)
     {
-        // Supprimez le logo de stockage s'il existe
+        // Récupérer l'église par son ID
+        $church = Church::find($churchId);
+
+        if (!$church) {
+            return response()->json(['error' => 'Église non trouvée'], 404);
+        }
+
+        // Supprimer le logo de stockage s'il existe
         if ($church->logo) {
             Storage::disk('public')->delete($church->logo);
         }
 
-        $church->delete();
-        return $this->successResponse(null, 'Église supprimée avec succès.');
-    }
-
-    /**
-     * Gérer le téléchargement du logo.
-     */
-    private function handleLogoUpload($request, Church $church = null): ?string
-    {
-        if ($request->hasFile('logo')) {
-            // Supprimez l'ancien logo s'il existe et que c'est une mise à jour
-            if ($church && $church->logo) {
-                Storage::disk('public')->delete($church->logo);
-            }
-
-            $logoFile = $request->file('logo');
-            $filename = $request->input('name') . '_' . time() . '.' . $logoFile->getClientOriginalExtension();
-            return $logoFile->storeAs('public/logos', $filename);
+        // Désassocier le serviteur de Dieu de l'église sans le supprimer
+        $serviteur = ServiteurDeDieu::where('church_id', $church->id)->first();
+        if ($serviteur) {
+            // Dissocier le serviteur de l'église
+            $serviteur->church_id = null;
+            $serviteur->is_assigned = 0;
+            $serviteur->is_main = 0; // Mettre à jour l'attribut si nécessaire
+            $serviteur->save();
         }
-        return $church ? $church->logo : null; // Conserve le logo existant s'il n'y a pas de nouveau fichier
+
+        // Supprimer l'église
+        $church->delete();
+
+        // Retourner une réponse JSON de succès
+        return response()->json(['success' => 'Église supprimée avec succès.'], 200);
     }
 
-    /**
-     * Obtenir le Serviteur de Dieu authentifié.
-     */
-    private function getAuthenticatedServiteurDeDieu()
-    {
-        return ServiteurDeDieu::where('user_id', auth()->id())->first();
-    }
+
+
 
     /**
      * Réponse standardisée pour les succès.
@@ -505,13 +490,5 @@ class ChurchApiController extends Controller
     private function successResponse($data, $message = 'Succès.', $status = 200): JsonResponse
     {
         return response()->json(['success' => $message, 'data' => $data], $status);
-    }
-
-    /**
-     * Réponse standardisée pour les erreurs.
-     */
-    private function errorResponse($message, $status = 400): JsonResponse
-    {
-        return response()->json(['error' => $message], $status);
     }
 }

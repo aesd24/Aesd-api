@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('date');
             $table->time('heure_debut');
             $table->time('heure_fin');
-            // $table->foreignId('id_eglise')->constrained('church')->onDelete('cascade'); // Clé étrangère
+            $table->foreignId('id_eglise')->constrained('churches')->onDelete('cascade'); // Clé étrangère
             $table->string('file')->nullable();
             $table->timestamps();
         });

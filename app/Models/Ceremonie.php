@@ -14,23 +14,13 @@ class Ceremonie extends Model
         'description',
         'media',
         'event_date',
+        'id_eglise'
     ];
 
 
-    /**
-     * Relation plusieurs-à-plusieurs avec le modèle Church
-     */
+
     public function churches()
     {
-        return $this->belongsToMany(Church::class, 'church_ceremonies', 'ceremony_id', 'church_id')
-            ->withPivot('periode_time')
-            ->withTimestamps();
+        return $this->belongsTo(Church::class, 'id_eglise');
     }
-
-
-
-    // public function churches()
-    // {
-    //     return $this->belongsTo(Church::class, 'id_eglise');
-    // }
 }

@@ -32,6 +32,7 @@ class User extends Authenticatable
         'phone',
         'account_type',
         'adresse',
+        'profile_photo',
         'score',
         'time_remaining',
     ];

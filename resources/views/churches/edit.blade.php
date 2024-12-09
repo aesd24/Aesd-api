@@ -387,12 +387,12 @@
                     </div>
 
                     <!-- Catégorie -->
-                    <div class="form-group mb-6">
+                    {{-- <div class="form-group mb-6">
                         <label for="categorie" class="text-lg font-medium text-gray-700">Catégorie</label>
                         <input type="text" name="categorie" id="categorie"
                             class="form-control w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             value="{{ $church->categorie }}">
-                    </div>
+                    </div> --}}
 
                     <button type="submit"
                         class="btn btn-primary w-full py-3 px-4 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Mettre

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('description');
             $table->string('media')->nullable();
             $table->date('event_date');
-            // $table->foreignId('id_eglise')->constrained('church')->onDelete('cascade'); // Clé étrangère
+            $table->foreignId('id_eglise')->constrained('churches')->onDelete('cascade'); // Clé étrangère
             $table->timestamps();
         });
     }

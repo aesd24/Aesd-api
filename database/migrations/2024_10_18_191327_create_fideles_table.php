@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('fideles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            // $table->foreignId('church_id')->constrained('church')->onDelete('cascade');
-            $table->foreignId('church_id')->nullable()->constrained('church')->onDelete('cascade'); // Ajout de nullable ici
+            $table->unsignedBigInteger('church_id')->nullable(); // Ajout ici sans clé étrangère 
             $table->timestamps();
         });
     }

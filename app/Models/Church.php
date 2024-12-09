@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Church extends Model
 {
 
-    protected $table = 'church'; // Indiquez le nom correct de la table
+    protected $table = 'churches'; // Indiquez le nom correct de la table
 
     use HasFactory;
 
@@ -23,6 +23,9 @@ class Church extends Model
         'owner_servant_id',
         'type_church',
         'categorie',
+        'main_church_id',
+        'attestation_file_path',
+        'validation_status'
     ];
 
 
@@ -65,16 +68,7 @@ class Church extends Model
     // Une église peut avoir plusieurs cérémonies
 
 
-    /**
-     * Relation plusieurs-à-plusieurs avec le modèle Ceremony
-     */
-    public function ceremonies()
-    {
 
-        return $this->belongsToMany(Ceremonie::class, 'church_ceremonies', 'ceremony_id', 'church_id')
-            ->withPivot('periode_time')
-            ->withTimestamps();
-    }
 
 
     // public function ceremonies()
@@ -102,14 +96,16 @@ class Church extends Model
     // }
 
 
-
-
-
-
-
-
     // public function owner()
     // {
     //     return $this->belongsTo(User::class, 'owner_servant_id');
     // }
+
+
+
+
+    public function ceremonies()
+    {
+        return $this->hasMany(Ceremonie::class, 'id_eglise');
+    }
 }

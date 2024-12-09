@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('church', function (Blueprint $table) {
-            $table->id();
+        Schema::create('churches', function (Blueprint $table) {
+            $table->id(); // Crée la clé primaire d'abord
             $table->string('name');
             $table->string('email')->unique();
             $table->string('phone');
@@ -21,13 +21,10 @@ return new class extends Migration
             $table->boolean('is_main')->default(false);
             $table->text('description')->nullable();
             $table->string('attestation_file_path')->nullable();
-            $table->string('validation_status')->nullable();
-
-            // $table->foreignId('owner_servant_id')->nullable();
-            // $table->foreignId('owner_servant_id')->nullable()->constrained('serviteurs_de_dieu')->onDelete('set null');
+            $table->enum('validation_status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('type_church');
-            // $table->string('categorie');
             $table->integer('main_church_id')->nullable();
+            $table->unsignedBigInteger('owner_servant_id')->nullable(); // Ajout ici sans clé étrangère
             $table->timestamps();
         });
     }
@@ -37,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('church');
+        Schema::dropIfExists('churches');
     }
 };

@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('temoignages', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->string('title');
-            $table->text('body');
-            // $table->timestamp('published_at')->nullable();
-            $table->dateTime('published_at')->nullable();
+            $table->string('confession_file_path');
+            $table->dateTime('published_at');
             $table->boolean('is_anonymous')->default(false);
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();

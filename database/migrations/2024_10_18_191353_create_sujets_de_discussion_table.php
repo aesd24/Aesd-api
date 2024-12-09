@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('theme');
             $table->date('date');
             $table->text('body');
-            $table->foreignId('administrateur_id')->constrained('administrateurs')->onDelete('cascade');
             $table->timestamps();
         });
     }

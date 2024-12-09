@@ -10,13 +10,6 @@ use App\Models\ServiteurDeDieu;
 
 class CeremonieController extends Controller
 {
-    // public function index()
-    // {
-    //     $ceremonies = Ceremonie::with('churches')->get();
-    //     return view('ceremonies.index', compact('ceremonies'));
-    // }
-
-
 
 
     public function index()
@@ -31,26 +24,25 @@ class CeremonieController extends Controller
 
         // Récupère les cérémonies liées aux églises du serviteur
         $ceremonies = Ceremonie::whereHas('churches', function ($query) use ($serviteur) {
+            // On cherche les églises associées à ce serviteur
             $query->where('owner_servant_id', $serviteur->id);
-        })->with('churches')->get();
+        })
+            // On charge la relation 'churches' pour les utiliser dans la vue
+            ->with('churches')
+            ->get();
 
+        // Retourner la vue avec les cérémonies récupérées
         return view('ceremonies.index', compact('ceremonies'));
     }
 
 
 
 
-    // public function create()
-    // {
-    //     $churches = Church::all(); // Récupère toutes les églises pour afficher dans le formulaire
-    //     return view('ceremonies.create', compact('churches'));
-    // }
-
-
 
     public function create()
     {
-        $user = auth()->user(); // Utilisateur actuellement connecté
+        // Utilisateur actuellement connecté
+        $user = auth()->user();
 
         // Récupérer le ServiteurDeDieu correspondant à l'utilisateur
         $serviteur = ServiteurDeDieu::where('user_id', $user->id)->first();
@@ -60,9 +52,15 @@ class CeremonieController extends Controller
             return redirect()->back()->with('error', 'Aucun serviteur associé à cet utilisateur.');
         }
 
-        // Récupérer les églises créées par l'utilisateur connecté
+        // Récupérer les églises créées par le serviteur (utilisateur connecté)
         $churches = Church::where('owner_servant_id', $serviteur->id)->get();
 
+        // Vérifier si des églises sont trouvées
+        if ($churches->isEmpty()) {
+            return redirect()->back()->with('error', 'Aucune église trouvée pour ce serviteur.');
+        }
+
+        // Retourner la vue de création de cérémonie avec les églises disponibles
         return view('ceremonies.create', compact('churches'));
     }
 
@@ -70,145 +68,65 @@ class CeremonieController extends Controller
 
 
 
-
-
-
-    // public function store(Request $request)
-    // {
-    //     $validatedData = $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'description' => 'nullable|string',
-    //         'media' => 'nullable|string',
-    //         'event_date' => 'required|date',
-    //         'churches' => 'required|array', // Validation pour les églises sélectionnées
-    //         'churches.*' => 'exists:churches,id', // Validation pour chaque église sélectionnée
-    //         'periode_times' => 'required|array',
-    //         'periode_times.*' => 'string',
-    //     ]);
-
-    //     $ceremonie = Ceremonie::create($validatedData);
-
-    //     // Utilisation de sync() pour associer les églises avec les périodes de temps
-    //     $syncData = [];
-    //     foreach ($request->churches as $index => $church_id) {
-    //         $syncData[$church_id] = ['periode_time' => $request->periode_times[$index]];
-    //     }
-    //     $ceremonie->churches()->sync($syncData);
-
-    //     return redirect()->route('ceremonies.index')->with('success', 'Cérémonie créée avec succès.');
-    // }
-
-
-    // public function store(Request $request)
-    // {
-    //     // Valider les données entrantes
-    //     $validatedData = $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'description' => 'nullable|string',
-    //         'media' => 'nullable|string',
-    //         'event_date' => 'required|date',
-    //         'churches' => 'required|array', // Validation pour les églises sélectionnées
-    //         'churches.*' => 'exists:church,id', // Correction pour correspondre au nom de table
-    //         'periode_times' => 'required|array',
-    //         'periode_times.*' => 'string',
-    //     ]);
-
-    //     // Créer la cérémonie avec les données validées
-    //     $ceremonie = Ceremonie::create($validatedData);
-
-    //     // Préparer les données pour la table pivot avec les périodes de temps
-    //     $syncData = [];
-    //     foreach ($request->churches as $index => $church_id) {
-    //         // S'assurer que la période de temps correspond à l'église
-    //         $syncData[$church_id] = ['periode_time' => $request->periode_times[$index]];
-    //     }
-
-    //     // Associer les églises et les périodes à la cérémonie
-    //     $ceremonie->churches()->sync($syncData);
-
-    //     return redirect()->route('ceremonies.index')->with('success', 'Cérémonie créée avec succès.');
-    // }
-
-
-
-    // public function store(Request $request)
-    // {
-    //     // Valider les données entrantes
-    //     $validatedData = $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'description' => 'nullable|string',
-    //         'media' => 'nullable|string',
-    //         'event_date' => 'required|date',
-    //         'churches' => 'required|array', // Validation pour les églises sélectionnées
-    //         'churches.*' => 'exists:church,id', // Vérifiez que l'ID de l'église existe
-    //         'periode_time' => 'required|date', // Validation pour une période unique
-    //     ]);
-
-    //     // Créer la cérémonie avec les données validées
-    //     $ceremonie = Ceremonie::create([
-    //         'title' => $validatedData['title'],
-    //         'description' => $validatedData['description'],
-    //         // 'media' => $validatedData['media'],
-    //         'event_date' => $validatedData['event_date'],
-    //     ]);
-
-    //     // Préparer les données pour la table pivot avec une période unique
-    //     $syncData = [];
-    //     foreach ($request->churches as $church_id) {
-    //         // Associer chaque église avec la même période
-    //         $syncData[$church_id] = ['periode_time' => $request->periode_time];
-    //     }
-
-    //     // Associer les églises et la période à la cérémonie
-    //     $ceremonie->churches()->sync($syncData);
-
-    //     return redirect()->route('ceremonies.index')->with('success', 'Cérémonie créée avec succès.');
-    // }
-
-
-
-
-
+    /**
+     * Crée une nouvelle cérémonie et l'associe à des églises.
+     */
     public function store(Request $request)
     {
-        // Valider les données entrantes
+        // Validation des données d'entrée
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'media' => 'nullable|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:20480', // Validation pour le champ media
+            'media' => 'nullable|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:20480',
             'event_date' => 'required|date',
-            'churches' => 'required|array', // Validation pour les églises sélectionnées
-            'churches.*' => 'exists:church,id', // Vérifiez que l'ID de l'église existe
-            'periode_time' => 'required|date', // Validation pour une période unique
+            'churches' => 'required|array',
+            'churches.*' => 'exists:churches,id',
+            'periode_time' => 'required|date',
+        ], [
+            'title.required' => 'Le titre de la cérémonie est obligatoire.',
+            'title.string' => 'Le titre doit être une chaîne de caractères valide.',
+            'title.max' => 'Le titre ne peut pas dépasser 255 caractères.',
+            'description.string' => 'La description doit être une chaîne de caractères valide.',
+            'media.file' => 'Le fichier média doit être une image ou une vidéo.',
+            'media.mimes' => 'Le fichier média doit avoir une extension valide (jpeg, png, jpg, gif, mp4, mov, avi).',
+            'media.max' => 'Le fichier média ne peut pas dépasser 20 Mo.',
+            'event_date.required' => 'La date de l\'événement est obligatoire.',
+            'event_date.date' => 'La date de l\'événement doit être une date valide.',
+            'churches.required' => 'Vous devez sélectionner au moins une église.',
+            'churches.array' => 'Les églises doivent être fournies sous forme de tableau.',
+            'churches.*.exists' => 'L\'église sélectionnée n\'existe pas.',
+            'periode_time.required' => 'La période est obligatoire.',
+            'periode_time.date' => 'La période doit être une date valide.',
         ]);
 
-        // Gérer le téléchargement du fichier média
-        $mediaPath = null; // Initialiser le chemin du média
+        // Gestion du fichier média s'il existe
+        $mediaPath = null;
         if ($request->hasFile('media')) {
             $mediaFile = $request->file('media');
-            // Définir le chemin où le fichier sera stocké
-            $mediaPath = $mediaFile->store('media', 'public'); // 'media' est le dossier et 'public' est le disque
+            $mediaPath = $mediaFile->store('media', 'public');
         }
 
-        // Créer la cérémonie avec les données validées
+        // Création de la cérémonie
         $ceremonie = Ceremonie::create([
             'title' => $validatedData['title'],
-            'description' => $validatedData['description'],
-            'media' => $mediaPath, // Enregistrer le chemin du fichier média
+            'description' => $validatedData['description'] ?? null,
+            'media' => $mediaPath,
             'event_date' => $validatedData['event_date'],
         ]);
 
-        // Préparer les données pour la table pivot avec une période unique
+        // Association des églises avec la période
         $syncData = [];
         foreach ($request->churches as $church_id) {
-            // Associer chaque église avec la même période
-            $syncData[$church_id] = ['periode_time' => $request->periode_time];
+            $syncData[$church_id] = ['periode_time' => $validatedData['periode_time']];
         }
-
-        // Associer les églises et la période à la cérémonie
         $ceremonie->churches()->sync($syncData);
 
-        return redirect()->route('ceremonies.index')->with('success', 'Cérémonie créée avec succès.');
+        // Réponse JSON
+        return response()->json([
+            'success' => true,
+            'message' => 'Cérémonie créée avec succès.',
+            'data' => $ceremonie->load('churches'),
+        ], 201);
     }
 
 
@@ -223,121 +141,93 @@ class CeremonieController extends Controller
     }
 
 
-    // public function edit(Ceremonie $ceremonie)
-    // {
-    //     $churches = Church::all(); // Récupère toutes les églises pour l'édition
-    //     return view('ceremonies.edit', compact('ceremonie', 'churches'));
-    // }
 
 
+
+    // Méthode pour afficher le formulaire de modification d'une cérémonie
     public function edit($id)
     {
-        // Récupérer la cérémonie par ID
+        // Récupérer la cérémonie par son ID
         $ceremonie = Ceremonie::findOrFail($id);
 
-        $user = auth()->user(); // Utilisateur actuellement connecté
+        // Récupérer toutes les églises disponibles
+        $churches = Church::all();
 
-        // Récupérer le ServiteurDeDieu correspondant à l'utilisateur
-        $serviteur = ServiteurDeDieu::where('user_id', $user->id)->first();
-
-        // Vérifier si un ServiteurDeDieu est trouvé
-        if (!$serviteur) {
-            return redirect()->back()->with('error', 'Aucun serviteur associé à cet utilisateur.');
-        }
-
-        // Récupérer les églises créées par l'utilisateur connecté
-        $churches = Church::where('owner_servant_id', $serviteur->id)->get();
-
-        // Passer l'objet cérémonie et la liste des églises à la vue
+        // Retourner la vue avec les données
         return view('ceremonies.edit', compact('ceremonie', 'churches'));
     }
 
 
-    // public function update(Request $request, Ceremonie $ceremonie)
-    // {
-    //     $validatedData = $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'description' => 'nullable|string',
-    //         'media' => 'nullable|string',
-    //         'event_date' => 'required|date',
-    //         'churches' => 'required|array',
-    //         'churches.*' => 'exists:churches,id',
-    //         'periode_times' => 'required|array',
-    //         'periode_times.*' => 'string',
-    //     ]);
 
-    //     $ceremonie->update($validatedData);
-
-    //     // Synchroniser les églises et les périodes de temps avec sync()
-    //     $syncData = [];
-    //     foreach ($request->churches as $index => $church_id) {
-    //         $syncData[$church_id] = ['periode_time' => $request->periode_times[$index]];
-    //     }
-    //     $ceremonie->churches()->sync($syncData);
-
-    //     return redirect()->route('ceremonies.index')->with('success', 'Cérémonie mise à jour avec succès.');
-    // }
-
+    // Méthode pour mettre à jour la cérémonie
     public function update(Request $request, $id)
     {
-        // Valider les données entrantes
-        $validatedData = $request->validate([
+        // Validation des données
+        $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'media' => 'nullable|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:20480', // Validation pour le champ media
             'event_date' => 'required|date',
-            'churches' => 'required|array', // Validation pour les églises sélectionnées
-            'churches.*' => 'exists:church,id', // Vérifiez que l'ID de l'église existe
-            'periode_time' => 'required|date', // Validation pour une période unique
+            'media' => 'nullable|mimes:jpg,jpeg,png,mp4,avi,mov|max:2048',
+            'id_eglise' => 'required|exists:churches,id',
         ]);
 
-        // Trouver la cérémonie à mettre à jour
+        // Récupérer la cérémonie à mettre à jour
         $ceremonie = Ceremonie::findOrFail($id);
 
-        // Gérer le téléchargement du fichier média, si un nouveau fichier est fourni
-        $mediaPath = $ceremonie->media; // Gardez l'ancien chemin par défaut
+        // Mise à jour des informations de la cérémonie
+        $ceremonie->title = $request->input('title');
+        $ceremonie->description = $request->input('description');
+        $ceremonie->event_date = $request->input('event_date');
+
+        // Gérer le fichier média (si fourni)
         if ($request->hasFile('media')) {
-            // Supprimer l'ancien fichier média si nécessaire
-            if ($ceremonie->media) {
+            // Vérifier si un média existe déjà et le supprimer
+            if ($ceremonie->media && Storage::disk('public')->exists($ceremonie->media)) {
                 Storage::disk('public')->delete($ceremonie->media);
             }
 
-            // Stocker le nouveau fichier
-            $mediaFile = $request->file('media');
-            $mediaPath = $mediaFile->store('media', 'public'); // 'media' est le dossier et 'public' est le disque
+            // Enregistrer le nouveau fichier média
+            $mediaPath = $request->file('media')->store('media', 'public');
+            $ceremonie->media = $mediaPath;
         }
 
-        // Mettre à jour la cérémonie avec les données validées
-        $ceremonie->update([
-            'title' => $validatedData['title'],
-            'description' => $validatedData['description'],
-            'media' => $mediaPath, // Enregistrer le chemin du fichier média
-            'event_date' => $validatedData['event_date'],
-        ]);
+        // Associer l'église sélectionnée (pour une relation BelongsTo)
+        $ceremonie->id_eglise = $request->input('id_eglise'); // Affecter directement l'ID de l'église
 
-        // Préparer les données pour la table pivot avec une période unique
-        $syncData = [];
-        foreach ($request->churches as $church_id) {
-            // Associer chaque église avec la même période
-            $syncData[$church_id] = ['periode_time' => $validatedData['periode_time']];
-        }
+        // Sauvegarder les changements
+        $ceremonie->save();
 
-        // Associer les églises et la période à la cérémonie
-        $ceremonie->churches()->sync($syncData);
-
-        return redirect()->route('ceremonies.index')->with('success', 'Cérémonie mise à jour avec succès.');
+        // Redirection après la mise à jour
+        return redirect()->route('ceremonies.index')->with('success', 'Cérémonie mise à jour avec succès!');
     }
 
 
 
 
 
+    // public function destroy($id)
+    // {
+    //     $ceremonie = Ceremonie::findOrFail($id);
+    //     $ceremonie->delete();
+
+    //     return redirect()->route('ceremonies.index')->with('success', 'Cérémonie supprimée avec succès.');
+    // }
+
 
     public function destroy($id)
     {
+        // Récupérer la cérémonie par son ID
         $ceremonie = Ceremonie::findOrFail($id);
+
+        // Vérifier si une image/média est associé(e) et la supprimer du stockage
+        if ($ceremonie->media && Storage::disk('public')->exists($ceremonie->media)) {
+            Storage::disk('public')->delete($ceremonie->media);
+        }
+
+        // Supprimer la cérémonie de la base de données
         $ceremonie->delete();
 
-        return redirect()->route('ceremonies.index')->with('success', 'Cérémonie supprimée avec succès.');
+        // Redirection avec un message de succès
+        return redirect()->route('ceremonies.index')->with('success', 'Cérémonie et son média supprimés avec succès.');
     }
 }

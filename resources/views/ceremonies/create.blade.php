@@ -107,37 +107,31 @@
                             @endif
                         </div>
 
-                        <!-- Champ unique pour la période -->
-                        <div class="form-group mb-4">
-                            <label for="periode_time" class="block text-gray-700">Période de la cérémonie</label>
-                            <input type="datetime-local" name="periode_time" id="periode_time" class="form-control border border-gray-300 rounded px-4 py-2 w-full"
-                                   value="{{ old('periode_time') }}" required>
-                            @if ($errors->has('periode_time'))
-                                <div class="text-red-500 mt-1">{{ $errors->first('periode_time') }}</div>
-                            @endif
-                        </div>
-
                         <!-- Champ pour le média -->
                         <div class="form-group mb-4">
                             <label for="media" class="block text-gray-700">Média (images ou vidéos)</label>
-                            <input type="file" name="media" id="media" class="form-control border border-gray-300 rounded px-4 py-2 w-full" accept="image/*,video/*" required>
+                            <input type="file" name="media" id="media" class="form-control border border-gray-300 rounded px-4 py-2 w-full" accept="image/*,video/*">
                             @if ($errors->has('media'))
                                 <div class="text-red-500 mt-1">{{ $errors->first('media') }}</div>
                             @endif
                         </div>
 
                         <!-- Section pour les Églises associées -->
-                        <h3 class="text-xl font-semibold mt-6 mb-4">Associer des Églises</h3>
+                        <h3 class="text-xl font-semibold mt-6 mb-4">Associer une Église</h3>
                         @foreach ($churches as $church)
                             <div class="form-group mb-2">
-                                <input type="checkbox" name="churches[]" value="{{ $church->id }}" id="church_{{ $church->id }}" class="mr-2">
+                                <input type="radio" name="id_eglise" value="{{ $church->id }}" id="church_{{ $church->id }}" class="mr-2">
                                 <label for="church_{{ $church->id }}" class="text-gray-700">{{ $church->name }}</label>
                             </div>
                         @endforeach
+                        @if ($errors->has('id_eglise'))
+                            <div class="text-red-500 mt-1">{{ $errors->first('id_eglise') }}</div>
+                        @endif
 
                         <!-- Bouton de soumission -->
-                        <button type="submit" class=" px-4 py-2 rounded">Créer</button>
+                        <button type="submit" class="">Créer</button>
                     </form>
+
                 </div>
 
             </div>
