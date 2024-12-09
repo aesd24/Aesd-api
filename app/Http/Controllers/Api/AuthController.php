@@ -41,7 +41,7 @@ class AuthController extends Controller
             // Ajout des validations pour les champs spécifiques
             'id_card_recto' => $request->account_type === 'serviteur_de_dieu' ? 'required|file|mimes:jpeg,png,jpg|max:2048' : 'nullable',
             'id_card_verso' => $request->account_type === 'serviteur_de_dieu' ? 'required|file|mimes:jpeg,png,jpg|max:2048' : 'nullable',
-            'is_main' => $request->account_type === 'serviteur_de_dieu' ? 'nullable|boolean' : 'nullable',
+            'is_main' => 'nullable|boolean',
         ], [
             'name.required' => 'Le champ nom est obligatoire.',
             'email.required' => 'Le champ email est obligatoire.',

@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('user', [AuthController::class, 'user']);
 
-    Route::get('user_auth_infos', [AuthController::class, 'user_auth_infos']);
+    Route::get('user_infos', [AuthController::class, 'user_auth_infos']);
 
     // Route de vérification d'email (décommenter si nécessaire)
     // Route::post('email/verify', [VerificationController::class, 'verify'])->middleware('throttle:6,1');
